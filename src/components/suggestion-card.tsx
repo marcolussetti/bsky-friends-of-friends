@@ -115,7 +115,7 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
                       variant="secondary"
                       className="text-xs font-normal cursor-pointer hover:bg-secondary/80"
                     >
-                      +{suggestion.followedBy.length - 3} more
+                      and {suggestion.followedBy.length - 3} more
                       <ChevronDown className="ml-0.5 h-3 w-3" />
                     </Badge>
                   </CollapsibleTrigger>

@@ -1,6 +1,6 @@
 import { AtpAgent, AppBskyActorDefs } from "@atproto/api"
 
-const MS_WAIT_BETWEEN_REQUESTS = 100
+const MS_WAIT_BETWEEN_REQUESTS = 50
 const FETCH_LIMIT = 100
 const BSKY_API_ENDPOINT = "https://public.api.bsky.app"
 
