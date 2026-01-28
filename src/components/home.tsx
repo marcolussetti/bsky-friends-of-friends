@@ -8,23 +8,42 @@ import { Input } from "./ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import { computeSuggestions, parseUsername, type ProgressUpdate } from "@/lib/bsky"
+import { computeSuggestions, parseUsername, type ProgressUpdate, type Suggestion } from "@/lib/bsky"
+import { SuggestionCard } from "./suggestion-card"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+
+const ITEMS_PER_PAGE = 10
 
 export function Home() {
   const [username, setUsername] = React.useState("")
   const [mode, setMode] = React.useState<"following" | "friends">("following")
   const [isLoading, setIsLoading] = React.useState(false)
   const [progress, setProgress] = React.useState<ProgressUpdate | null>(null)
+  const [suggestions, setSuggestions] = React.useState<Suggestion[]>([])
+  const [currentPage, setCurrentPage] = React.useState(1)
+
+  const totalPages = Math.ceil(suggestions.length / ITEMS_PER_PAGE)
+  const paginatedSuggestions = suggestions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setIsLoading(true)
+    setCurrentPage(1)
     try {
-      console.log("Searching for:", username, "mode:", mode)
-      const suggestions = await computeSuggestions(parseUsername(username), 2, 50, mode, (update: ProgressUpdate) => {
+      const results = await computeSuggestions(parseUsername(username), 2, 50, mode, (update: ProgressUpdate) => {
         setProgress(update)
       })
-      console.log("Suggestions:", suggestions)
+      setSuggestions(results)
     } finally {
       setIsLoading(false)
       setProgress(null)
@@ -35,22 +54,23 @@ export function Home() {
     <div className="bg-background w-full">
         <div
             data-slow="home-wrapper"
-                className={cn(
-                    "mx-auto grid min-h-screen w-full max-w-5xl min-w-0 content-center items-start gap-8 p-4 pt-2 sm:gap-12 sm:p-6 md:grid-cols-2 md:gap-8 lg:p-12 2xl:max-w-6xl"
-                )}
+            className={cn(
+                "mx-auto flex flex-col w-full max-w-xl min-w-0 gap-8 p-4 pt-8 sm:p-6 lg:p-12"
+            )}
         >
-            <h1 className="scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance md:col-span-2">
-                Friends of Friends in Bluesky
-            </h1>
-            <p className="text-center text-muted-foreground text-xl md:col-span-2">
-                Find Bluesky accounts you may be interested in following that your friends already follow.
-            </p>
+            <header className="text-center">
+                <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
+                    Friends of Friends in Bluesky
+                </h1>
+                <p className="text-muted-foreground text-xl mt-2">
+                    Find Bluesky accounts you may be interested in following that your friends already follow.
+                </p>
+            </header>
 
-            <Card className="w-full max-w-xl md:col-span-2 mx-auto">
-                {/* <CardHeader></CardHeader> */}
+            <Card className="w-full">
                 <CardContent>
                     <form onSubmit={handleSubmit}>
-                        <div className="flex flex-col gap-6 ">
+                        <div className="flex flex-col gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="username">Your BlueSky Username</Label>
                                 <Input
@@ -84,6 +104,51 @@ export function Home() {
                     </form>
                 </CardContent>
             </Card>
+
+            {suggestions.length > 0 && (
+                <section className="flex flex-col gap-4">
+                    <h2 className="text-xl font-semibold">
+                        Suggestions ({suggestions.length})
+                    </h2>
+
+                    <div className="flex flex-col gap-3">
+                        {paginatedSuggestions.map((suggestion) => (
+                            <SuggestionCard key={suggestion.did} suggestion={suggestion} />
+                        ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
+                                    />
+                                </PaginationItem>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <PaginationItem key={page}>
+                                        <PaginationLink
+                                            onClick={() => setCurrentPage(page)}
+                                            isActive={currentPage === page}
+                                        >
+                                            {page}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                ))}
+
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    )}
+                </section>
+            )}
         </div>
     </div>
   )
