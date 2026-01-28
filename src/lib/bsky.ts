@@ -24,7 +24,43 @@ export interface Suggestion {
   followedBy: string[]
 }
 
-export type ProgressCallback = (current: number, total: number, message: string) => void
+export type ProgressPhase = "fetching-follows" | "filtering-friends" | "finding-candidates"
+
+export interface ProgressUpdate {
+    current: number
+    total: number
+    message: string
+    phase: ProgressPhase
+    percentage: number
+    overallPercentage: number
+}
+
+export type ProgressCallback = (update: ProgressUpdate) => void
+
+interface ProgressTracker {
+    completedCalls: number
+    totalCalls: number
+}
+
+function emitProgress(
+    callback: ProgressCallback | undefined,
+    tracker: ProgressTracker,
+    phase: ProgressPhase,
+    current: number,
+    total: number,
+    message: string
+) {
+    callback?.({
+        current,
+        total,
+        message,
+        phase,
+        percentage: total > 0 ? Math.round((current / total) * 100) : 0,
+        overallPercentage: tracker.totalCalls > 0
+            ? Math.round((tracker.completedCalls / tracker.totalCalls) * 100)
+            : 0
+    })
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -96,22 +132,30 @@ export async function computeSuggestions(
 ): Promise<Suggestion[]> {
     const client = new AtpAgent({ service: BSKY_API_ENDPOINT })
 
+    // Progress tracking - we'll refine totalCalls as we learn more
+    const tracker: ProgressTracker = {
+        completedCalls: 0,
+        totalCalls: 2  // Initial estimate: getProfile + getFollows
+    }
+
     // Get user's DID early - needed for friends mode check
     let userDid: string
     try {
         const userProfile = await client.getProfile({ actor: username })
         userDid = userProfile.data.did
-    } catch (e) {
+        tracker.completedCalls++
+    } catch {
         throw new Error(`Could not find user "${username}". Please check the username is correct.`)
     }
 
-    progressCallback?.(0, 0, `Finding who ${username} follows...`)
+    emitProgress(progressCallback, tracker, "fetching-follows", 0, 0, `Finding who ${username} follows...`)
 
     // Get direct follows
     let followedProfiles: AppBskyActorDefs.ProfileView[]
 
     try {
         followedProfiles = await getFollows(client, username)
+        tracker.completedCalls++
     } catch (e) {
         throw new Error(`Could not fetch follows for ${username}: ${e}`)
     }
@@ -120,15 +164,22 @@ export async function computeSuggestions(
         return []
     }
 
-    progressCallback?.(0, followedProfiles.length, `Processing ${followedProfiles.length} follows...`)
+    // Now we know N - update total estimate
+    // Phase 1: N calls (getFollows for each followed user)
+    // Phase 2: In friends mode, M calls (unknown until filtering, estimate as N for now)
+    const N = followedProfiles.length
+    tracker.totalCalls = 2 + N + (mode === "friends" ? N : 0)
+
+    emitProgress(progressCallback, tracker, "fetching-follows", 0, followedProfiles.length, `Processing ${followedProfiles.length} follows...`)
 
     const followedEnhancedProfiles = new Map<string, EnhancedProfile>()
     for (const [i, user] of followedProfiles.entries()) {
-        progressCallback?.(i + 1, followedProfiles.length, `Fetching follows for ${user.handle} (${i + 1}/${followedProfiles.length})...`)
+        emitProgress(progressCallback, tracker, "fetching-follows", i + 1, followedProfiles.length, `Fetching follows for ${user.handle}...`)
         followedEnhancedProfiles.set(user.did, {
             ...user,
             following: await getFollows(client, user.handle),
         })
+        tracker.completedCalls++
         await sleep(MS_WAIT_BETWEEN_REQUESTS)
     }
 
@@ -140,6 +191,9 @@ export async function computeSuggestions(
                 followedEnhancedProfiles.delete(did)
             }
         }
+        // Refine total estimate now that we know M (mutual friends count)
+        const M = followedEnhancedProfiles.size
+        tracker.totalCalls = 2 + N + M
     }
 
     const alreadyFollowed = new Set(followedProfiles.map(user => user.did))
@@ -150,13 +204,14 @@ export async function computeSuggestions(
     const followedUsers = [...followedEnhancedProfiles.values()]
 
     for (const [i, followedUser] of followedUsers.entries()) {
-        progressCallback?.(i + 1, followedUsers.length, `Analyzing ${mode === "friends" ? "friends" : "follows"} of ${followedUser.handle} (${i + 1}/${followedUsers.length})...`)
+        emitProgress(progressCallback, tracker, "finding-candidates", i + 1, followedUsers.length, `Analyzing ${mode === "friends" ? "friends" : "follows"} of ${followedUser.handle}...`)
         // Use cached following
         let candidatePool = followedUser.following
 
         // In friends mode, filter to followedUser's mutual friends
         if (mode === "friends") {
             const followedUserFollowers = await getFollowers(client, followedUser.handle)
+            tracker.completedCalls++
             await sleep(MS_WAIT_BETWEEN_REQUESTS)
             const followerDids = new Set(followedUserFollowers.map(f => f.did))
             candidatePool = followedUser.following.filter(f => followerDids.has(f.did))

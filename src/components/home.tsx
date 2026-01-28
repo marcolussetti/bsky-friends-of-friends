@@ -8,24 +8,26 @@ import { Input } from "./ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import { computeSuggestions, parseUsername } from "@/lib/bsky"
+import { computeSuggestions, parseUsername, type ProgressUpdate } from "@/lib/bsky"
 
 export function Home() {
   const [username, setUsername] = React.useState("")
   const [mode, setMode] = React.useState<"following" | "friends">("following")
   const [isLoading, setIsLoading] = React.useState(false)
+  const [progress, setProgress] = React.useState<ProgressUpdate | null>(null)
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setIsLoading(true)
     try {
       console.log("Searching for:", username, "mode:", mode)
-      const suggestions = await computeSuggestions(parseUsername(username), 2, 50, mode, (current: number, total: number, message: string) => {
-        console.log(`[${current}/${total}] ${message}`)
+      const suggestions = await computeSuggestions(parseUsername(username), 2, 50, mode, (update: ProgressUpdate) => {
+        setProgress(update)
       })
       console.log("Suggestions:", suggestions)
     } finally {
       setIsLoading(false)
+      setProgress(null)
     }
   }
 
@@ -44,7 +46,7 @@ export function Home() {
                 Find Bluesky accounts you may be interested in following that your friends already follow.
             </p>
 
-            <Card className="w-full max-w-sm md:col-span-2 mx-auto">
+            <Card className="w-full max-w-xl md:col-span-2 mx-auto">
                 {/* <CardHeader></CardHeader> */}
                 <CardContent>
                     <form onSubmit={handleSubmit}>
@@ -73,7 +75,9 @@ export function Home() {
 
                                 <Button type="submit" disabled={isLoading}>
                                   {isLoading && <Loader2 className="animate-spin" />}
-                                  Search
+                                  {isLoading && progress
+                                    ? `${progress.message} (${progress.current}/${progress.total})`
+                                    : "Search"}
                                 </Button>
                             </div>
                         </div>
