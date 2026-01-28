@@ -1,7 +1,7 @@
-import { Home } from "@/components/home";
+import { Home } from "@/components/home"
 
 export function App() {
-return <Home />;
+  return <Home />
 }
 
-export default App;
+export default App

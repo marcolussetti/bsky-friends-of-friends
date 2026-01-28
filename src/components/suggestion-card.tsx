@@ -1,7 +1,11 @@
 import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { ChevronDown, User } from "lucide-react"
 import type { Suggestion } from "@/lib/bsky"
 
@@ -18,7 +22,8 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
   const previewFollowers = suggestion.followedBy.slice(0, 3)
   const hasMoreFollowers = suggestion.followedBy.length > 3
 
-  const descriptionIsTruncated = (suggestion.description?.length ?? 0) > DESCRIPTION_TRUNCATE_LENGTH
+  const descriptionIsTruncated =
+    (suggestion.description?.length ?? 0) > DESCRIPTION_TRUNCATE_LENGTH
   const truncatedDescription = descriptionIsTruncated
     ? suggestion.description?.slice(0, DESCRIPTION_TRUNCATE_LENGTH) + "..."
     : suggestion.description
@@ -64,14 +69,17 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
                 </p>
               </a>
               <Badge variant="secondary" className="shrink-0">
-                {suggestion.followedByCount} {suggestion.followedByCount === 1 ? "friend" : "friends"}
+                {suggestion.followedByCount}{" "}
+                {suggestion.followedByCount === 1 ? "friend" : "friends"}
               </Badge>
             </div>
 
             {/* Description */}
             {suggestion.description && (
               <p className="text-sm text-muted-foreground">
-                {isDescriptionOpen ? suggestion.description : truncatedDescription}
+                {isDescriptionOpen
+                  ? suggestion.description
+                  : truncatedDescription}
                 {descriptionIsTruncated && (
                   <button
                     onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
@@ -84,7 +92,10 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
             )}
 
             {/* Followed by */}
-            <Collapsible open={isFollowedByOpen} onOpenChange={setIsFollowedByOpen}>
+            <Collapsible
+              open={isFollowedByOpen}
+              onOpenChange={setIsFollowedByOpen}
+            >
               <p className="text-sm text-muted-foreground">
                 <span>Followed by </span>
                 {previewFollowers.map((entry, i) => (
@@ -95,7 +106,8 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
                 ))}
                 {hasMoreFollowers && !isFollowedByOpen && (
                   <CollapsibleTrigger className="text-primary hover:underline cursor-pointer">
-                    , +{suggestion.followedBy.length - 3} more <ChevronDown className="inline h-3 w-3" />
+                    , +{suggestion.followedBy.length - 3} more{" "}
+                    <ChevronDown className="inline h-3 w-3" />
                   </CollapsibleTrigger>
                 )}
                 {hasMoreFollowers && (
@@ -105,10 +117,10 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
                         {", "}
                         {entry.displayName}
                       </span>
-                    ))}
-                    {" "}
+                    ))}{" "}
                     <CollapsibleTrigger className="text-primary hover:underline cursor-pointer">
-                      show less <ChevronDown className="inline h-3 w-3 rotate-180" />
+                      show less{" "}
+                      <ChevronDown className="inline h-3 w-3 rotate-180" />
                     </CollapsibleTrigger>
                   </CollapsibleContent>
                 )}
