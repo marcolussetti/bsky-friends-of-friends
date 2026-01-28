@@ -96,35 +96,53 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
               open={isFollowedByOpen}
               onOpenChange={setIsFollowedByOpen}
             >
-              <p className="text-sm text-muted-foreground">
-                <span>Followed by </span>
-                {previewFollowers.map((entry, i) => (
-                  <span key={entry.handle}>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1 pt-2 border-t border-border/50">
+                <span className="text-xs text-muted-foreground/70 font-medium">
+                  Followed by
+                </span>
+                {previewFollowers.map((entry) => (
+                  <Badge
+                    key={entry.handle}
+                    variant="outline"
+                    className="text-xs font-normal"
+                  >
                     {entry.displayName}
-                    {i < previewFollowers.length - 1 && ", "}
-                  </span>
+                  </Badge>
                 ))}
                 {hasMoreFollowers && !isFollowedByOpen && (
-                  <CollapsibleTrigger className="text-primary hover:underline cursor-pointer">
-                    , +{suggestion.followedBy.length - 3} more{" "}
-                    <ChevronDown className="inline h-3 w-3" />
+                  <CollapsibleTrigger asChild>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs font-normal cursor-pointer hover:bg-secondary/80"
+                    >
+                      +{suggestion.followedBy.length - 3} more
+                      <ChevronDown className="ml-0.5 h-3 w-3" />
+                    </Badge>
                   </CollapsibleTrigger>
                 )}
                 {hasMoreFollowers && (
-                  <CollapsibleContent className="inline">
+                  <CollapsibleContent className="contents">
                     {suggestion.followedBy.slice(3).map((entry) => (
-                      <span key={entry.handle}>
-                        {", "}
+                      <Badge
+                        key={entry.handle}
+                        variant="outline"
+                        className="text-xs font-normal"
+                      >
                         {entry.displayName}
-                      </span>
-                    ))}{" "}
-                    <CollapsibleTrigger className="text-primary hover:underline cursor-pointer">
-                      show less{" "}
-                      <ChevronDown className="inline h-3 w-3 rotate-180" />
+                      </Badge>
+                    ))}
+                    <CollapsibleTrigger asChild>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs font-normal cursor-pointer hover:bg-secondary/80"
+                      >
+                        show less
+                        <ChevronDown className="ml-0.5 h-3 w-3 rotate-180" />
+                      </Badge>
                     </CollapsibleTrigger>
                   </CollapsibleContent>
                 )}
-              </p>
+              </div>
             </Collapsible>
           </div>
         </div>
