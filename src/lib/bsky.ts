@@ -16,12 +16,19 @@ export interface EnhancedProfile extends AppBskyActorDefs.ProfileView {
     followers?: AppBskyActorDefs.ProfileView[]  // only fetched in friends mode
 }
 
+export interface FollowedByEntry {
+  handle: string
+  displayName: string
+}
+
 export interface Suggestion {
   handle: string
   displayName: string
   did: string
+  avatar?: string
+  description?: string
   followedByCount: number
-  followedBy: string[]
+  followedBy: FollowedByEntry[]
 }
 
 export type ProgressPhase = "fetching-follows" | "filtering-friends" | "finding-candidates"
@@ -227,12 +234,17 @@ export async function computeSuggestions(
                     handle: candidate.handle,
                     displayName: candidate.displayName ?? "",
                     did: candidate.did,
+                    avatar: candidate.avatar,
+                    description: candidate.description,
                     followedBy: [],
                     followedByCount: 0
                 })
             }
 
-            candidates.get(candidate.did)!.followedBy.push(followedUser.handle)
+            candidates.get(candidate.did)!.followedBy.push({
+                handle: followedUser.handle,
+                displayName: followedUser.displayName ?? followedUser.handle
+            })
         }
     }
 

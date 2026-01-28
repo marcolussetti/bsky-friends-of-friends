@@ -55,7 +55,7 @@ export function Home() {
         <div
             data-slow="home-wrapper"
             className={cn(
-                "mx-auto flex flex-col w-full max-w-xl min-w-0 gap-8 p-4 pt-8 sm:p-6 lg:p-12"
+                "mx-auto flex flex-col w-full max-w-2xl min-w-0 gap-8 p-4 pt-8 sm:p-6 lg:p-12"
             )}
         >
             <header className="text-center">
