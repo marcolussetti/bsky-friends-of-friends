@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "./ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { AlertTriangle, Loader2 } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   computeSuggestions,
   parseUsername,
@@ -33,6 +34,7 @@ export function Home() {
   const [progress, setProgress] = React.useState<ProgressUpdate | null>(null)
   const [suggestions, setSuggestions] = React.useState<Suggestion[]>([])
   const [currentPage, setCurrentPage] = React.useState(1)
+  const [showSlowWarning, setShowSlowWarning] = React.useState(false)
 
   const totalPages = Math.ceil(suggestions.length / ITEMS_PER_PAGE)
   const paginatedSuggestions = suggestions.slice(
@@ -44,6 +46,7 @@ export function Home() {
     e.preventDefault()
     setIsLoading(true)
     setCurrentPage(1)
+    setShowSlowWarning(false)
     try {
       const results = await computeSuggestions(
         parseUsername(username),
@@ -52,6 +55,9 @@ export function Home() {
         mode,
         (update: ProgressUpdate) => {
           setProgress(update)
+          if (update.total > 50) {
+            setShowSlowWarning(true)
+          }
         }
       )
       setSuggestions(results)
@@ -78,6 +84,17 @@ export function Home() {
             friends already follow.
           </p>
         </header>
+
+        {showSlowWarning && (
+          <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
+            <AlertTriangle />
+            <AlertTitle>This may take a while</AlertTitle>
+            <AlertDescription>
+              This user has more than 50 follows. The tool really doesn't handle
+              this well — expect it to be very, very slow.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Card className="w-full">
           <CardContent>
